@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">AutoFillPOC</string>
+    <string name="str_configure_label">Configure</string>
+    <string name="settings_icon_desc">settings icon</string>
+    <string name="switch_enable_label">Enable AutoFill Service</string>
+    <string name="autofill_disabled_message">Autofill service has been disabled.</string>
+    <string name="autofill_service_set">Sample service set to default.</string>
+    <string name="autofill_service_not_set">Sample service not set to default.</string>
+</resources>
