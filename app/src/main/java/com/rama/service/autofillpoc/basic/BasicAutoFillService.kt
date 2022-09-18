@@ -2,8 +2,10 @@ package com.rama.service.autofillpoc.basic
 
 import android.app.assist.AssistStructure
 import android.app.assist.AssistStructure.ViewNode
+import android.content.Context
 import android.os.Build
 import android.os.CancellationSignal
+import android.provider.Settings
 import android.service.autofill.*
 import android.util.ArrayMap
 import android.util.Log
@@ -40,6 +42,7 @@ class BasicAutoFillService : AutofillService() {
             callback.onSuccess(null)
             return
         }
+        val saveFlags = getSaveFlag(this, actPackageName)
         val finPackageName = updateIfWebApp(actPackageName, structures)
         Log.d(TAG, "save request processing for $finPackageName")
         // check if credentials exists for this package
@@ -79,9 +82,14 @@ class BasicAutoFillService : AutofillService() {
         val requiredIds = ids.toTypedArray()
         response.setSaveInfo( // We only look to save valid fields
             SaveInfo.Builder(
-                SaveInfo.SAVE_DATA_TYPE_USERNAME or SaveInfo.SAVE_DATA_TYPE_PASSWORD or SaveInfo.SAVE_DATA_TYPE_EMAIL_ADDRESS,
+                SaveInfo.SAVE_DATA_TYPE_USERNAME or SaveInfo.SAVE_DATA_TYPE_PASSWORD,
                 requiredIds
-            ).build()
+            ).run {
+                if (saveFlags != null) {
+                    setFlags(saveFlags)
+                }
+                build()
+            }
         )
 
         // 3.Profit!
@@ -201,6 +209,25 @@ class BasicAutoFillService : AutofillService() {
         presentation.setImageViewResource(R.id.icon, R.drawable.ic_key_credential)
         return presentation
     }
+
+    private val saveFlagsForAccessibility =
+        mapOf(
+            "com.android.chrome" to SaveInfo.FLAG_SAVE_ON_ALL_VIEWS_INVISIBLE,
+            "com.chrome.beta" to SaveInfo.FLAG_SAVE_ON_ALL_VIEWS_INVISIBLE,
+            "com.chrome.dev" to SaveInfo.FLAG_SAVE_ON_ALL_VIEWS_INVISIBLE
+        )
+
+    private fun hasAccessibilityServiceEnabled(context: Context): Boolean {
+        return Settings.Secure.getString(
+            context.contentResolver,
+            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+        ).isNullOrEmpty()
+    }
+
+    private fun getSaveFlag(context: Context, appPackage: String): Int? =
+        saveFlagsForAccessibility[appPackage]?.takeIf {
+            hasAccessibilityServiceEnabled(context)
+        }
 
     private fun getHint(node: ViewNode): String? {
 
